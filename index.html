@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<style>
+      body {
+        text-align: center;
+      }
+      #canvas {
+        -webkit-box-shadow: 3px 3px 3px rgba(0,0,0,.5);
+        zoom: 1;
+      }
+		</style>
+    <script>
+      var animate = window.requestAnimationFrame ||
+        window.webkitRequestAnimationFrame ||
+        window.mozRequestAnimationFrame ||
+        window.oRequestAnimationFrame ||
+        window.msRequestAnimationFrame ||
+        function( callback ){
+          window.setTimeout(callback, 1000 / 60);
+        };
+
+      onload = function() {
+        var canvas = document.getElementById('canvas');
+        var w = canvas.width, h = canvas.height;
+        var ctx = canvas.getContext('2d');
+
+        window.onresize = function() {
+          var a = Math.min(document.documentElement.clientWidth, document.documentElement.clientHeight);
+          var b = Math.max(w, h);
+          canvas.style.zoom = .9 * a / b;
+        }
+        window.onresize();
+
+        var frame = 0;
+
+        var bitmaps = [ctx.createImageData(w, h), ctx.createImageData(w, h)];
+
+        function neighbors(x, y) {
+          var d = bitmaps[0].data;
+          var y0 = (y + h - 1) % h;
+          var y1 = (y + 1) % h;
+          var x0 = (x + w - 1) % w;
+          var x1 = (x + 1) % w;
+
+          return (d[x0 + y0 * w << 2] ? 1 : 0) +
+                 (d[x0 + y * w << 2] ? 1 : 0) +
+                 (d[x0 + y1 * w << 2] ? 1 : 0) +
+                 (d[x + y0 * w << 2] ? 1 : 0) +
+                 (d[x + y1 * w << 2] ? 1 : 0) +
+                 (d[x1 + y0 * w << 2] ? 1 : 0) +
+                 (d[x1 + y * w << 2] ? 1 : 0) +
+                 (d[x1 + y1 * w << 2] ? 1 : 0);
+        }
+
+        function eachPixel(f) {
+          var src = bitmaps[0].data, dst = bitmaps[1].data;
+          var si = 0, di = 0, arr;
+          var v = Array(4);
+          for (var y = 0; y < h; y++) {
+            for (var x = 0; x < w; x++) {
+              v[0] = src[si++];
+              v[1] = src[si++];
+              v[2] = src[si++];
+              v[3] = src[si++];
+              arr = f(x, y, v);
+              dst[di++] = arr[0];
+              dst[di++] = arr[1];
+              dst[di++] = arr[2];
+              dst[di++] = arr[3];
+            }
+          }
+        }
+
+        var arr = Array(4);
+        function initPixel(x, y) {
+          x -= w/2;
+          y -= h/2;
+          var v = Math.random()*(x*x + y*y)/1600;
+          v *= v;
+          v = v < .1 ? 255 : 0;
+          arr[0] = arr[1] = arr[2] = v;
+          arr[3] = 255;
+          return arr;
+        }
+
+        function nextPixel(x, y, v) {
+          var n = neighbors(x, y);
+
+          var isLive = n == 3 || (v[0] & n >= 2 && n<= 3);
+
+          arr[0] = arr[1] = arr[2] = isLive ? 255 : 0;
+          arr[3] = 255;
+          return arr;
+        }
+
+        function nextFrame() {
+          var v = bitmaps[0];
+          bitmaps[0] = bitmaps[1];
+          bitmaps[1] = v;
+        }
+
+        var t = Date.now();
+        function draw() {
+          nextFrame();
+          eachPixel(nextPixel);
+          ctx.putImageData(bitmaps[0], 0, 0);
+          frame++;
+
+          animate(draw);
+          t = Date.now();
+        }
+
+        eachPixel(initPixel);
+        draw();
+      }
+    </script>
+	</head>
+
+	<body>
+    <canvas id="canvas" width="200" height="200"></canvas>
+	</body>
+</html>
