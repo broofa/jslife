@@ -100,15 +100,24 @@
           bitmaps[1] = v;
         }
 
-        var t = Date.now();
+        var dates = [];
         function draw() {
+
           nextFrame();
           eachPixel(nextPixel);
           ctx.putImageData(bitmaps[0], 0, 0);
           frame++;
 
-          animate(draw);
+          // Track  frame rate
           t = Date.now();
+          while (dates.length && (dates[0] + 1000) < t) {
+            dates.shift();
+          }
+          dates.push(t);
+          ctx.fillStyle = 'rgba(0,255,0,.5)';
+          ctx.fillText('frame rate:' + dates.length, 4, 10);
+
+          animate(draw);
         }
 
         eachPixel(initPixel);
